@@ -34,8 +34,6 @@ std::string unparse_bin(std::string binary_line) {
     std::stringstream sstream(line);
     std::string unparsed_line;
 
-
-
     while(sstream.good()) {
         std::bitset<8> current_character;
         sstream >> current_character;
@@ -46,7 +44,6 @@ std::string unparse_bin(std::string binary_line) {
     // std::cout << unparsed_line;
     return unparsed_line.substr(0,unparsed_line.length()-1);
 }
-
 
 int main() {
     
@@ -81,17 +78,32 @@ int main() {
                 char c = uart_getc(UART_ID);
                 raw_data_line += c;
             }
+
+            START_FLAG = raw_data_line.substr(0,8);
             receiver_ax25_frame.START_FLAG = std::stoi(START_FLAG, 0, 2);
-            receiver_ax25_frame.START_FLAG = std::stoi(DEST_ADDR, 0, 2);
+
+            DEST_ADDR = raw_data_line.substr(8,56);
+            receiver_ax25_frame.DEST_ADDR = std::stoi(DEST_ADDR, 0, 2);
+            
+            SRC_ADDR = raw_data_line.substr(64,56);
             receiver_ax25_frame.SRC_ADDR = std::stoi(SRC_ADDR, 0, 2);
-            receiver_ax25_frame.SRC_ADDR = std::stoi(DIGIPEATER_ADDR, 0, 2);
+
+            DIGIPEATER_ADDR = raw_data_line.substr(120, 448);
+            receiver_ax25_frame.DIGIPEATER_ADDR = std::stoi(DIGIPEATER_ADDR, 0, 2);
+
+            CTRL_FIELD = raw_data_line.substr(568,8);
             receiver_ax25_frame.CTRL_FIELD = std::stoi(CTRL_FIELD, 0, 2);
+
+            PROTOCOL_ID = raw_data_line.substr(576,8);
             receiver_ax25_frame.PROTOCOL_ID = std::stoi(PROTOCOL_ID, 0, 2);
 
             INFO = unparse_bin(raw_data_line);    
             receiver_ax25_frame.INFO = INFO;
             
+            FCS = raw_data_line.substr(raw_data_line.size()-24, 16);
             receiver_ax25_frame.FCS = std::stoi(FCS, 0, 2);
+
+            END_FLAG = raw_data_line.substr(raw_data_line.size()-8, 8);
             receiver_ax25_frame.END_FLAG = std::stoi(END_FLAG, 0, 2);
         }
 
