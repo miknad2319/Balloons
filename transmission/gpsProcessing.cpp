@@ -9,7 +9,7 @@
 
 
 // UART SETUP
-#define UART_ID uart0
+#define UART_ID uart1
 #define BAUD_RATE 9600
 
 // Transmission/Send/Output 
@@ -17,6 +17,8 @@
 
 // Reciever/Input 
 #define UART_RX_PIN 5
+
+#define PARITY    UART_PARITY_NONE
 
 // USE THIS METHOD TO READ IN RAW GPS DATA
 
@@ -27,7 +29,9 @@ void package_GPGGA(std::string s, char delimiter, std::string& output)
     std::string binary_string = "";
     std::string output_string = "";
     int index = 0;
+
     while (!stream.eof()) {
+
         getline(stream, word, delimiter);
         //cout << word << endl;
         if (index == 0 && word != "$GPGGA")
@@ -38,12 +42,14 @@ void package_GPGGA(std::string s, char delimiter, std::string& output)
         }
         index++;
     }
+
     if (binary_string != "") {
-        for (size_t i = 0; i < binary_string.size(); i++)
-            // output_file << binary_string[i]; //this is for plaintxt
-            output_string += std::bitset<8>(binary_string[i]).to_string();
-        // output_file << endl;
-        output = output_string;
+        // for (size_t i = 0; i < binary_string.size(); i++)
+        //     // output_file << binary_string[i]; //this is for plaintxt
+        //     output_string += std::bitset<8>(binary_string[i]).to_string();
+        // // output_file << endl;
+        // output = output_string;
+        output = binary_string;
     }
 }
 
@@ -84,58 +90,63 @@ int main(int argc, char **argv){
         std::string binary_string = "";
 
         // Read/Parse raw data, write to line var
-        if(uart_is_readable(UART_ID)){
-
-            while(uart_is_readable(UART_ID)){
-                //SAVE GPGGA
-                char c = uart_getc(UART_ID);
-                raw_data_line += c;
-            }
-
-            package_GPGGA(raw_data_line, ',', parsed_data_line);
         
+        //SAVE GPGGA
+        char c = uart_getc(UART_ID);
+        while (c != '\n') {
+            raw_data_line += c;
+            c = uart_getc(UART_ID);
+        }
         
-            // packaging the parsed data
-            ax25_frame_send ax25_frame;
+        package_GPGGA(raw_data_line, ',', parsed_data_line);
 
-            ax25_frame.START_FLAG = 126;
-            binary_string += ax25_frame.START_FLAG.to_string().c_str();
+        std::cout << "Raw Data from GPS: ";
+        std::cout << raw_data_line << std::endl;
+        raw_data_line = "";
+    
+    
+        // packaging the parsed data
+        ax25_frame_send ax25_frame;
 
-            ax25_frame.DEST_ADDR = 32167;
-            binary_string += ax25_frame.DEST_ADDR.to_string();
+        ax25_frame.START_FLAG = 126;
+        binary_string += ax25_frame.START_FLAG.to_string().c_str();
 
-            ax25_frame.SRC_ADDR = 655852;
-            binary_string += ax25_frame.SRC_ADDR.to_string();
+        ax25_frame.DEST_ADDR = 32167;
+        binary_string += ax25_frame.DEST_ADDR.to_string();
 
-            ax25_frame.DIGIPEATER_ADDR = 487392983;
-            binary_string += ax25_frame.DIGIPEATER_ADDR.to_string();
+        ax25_frame.SRC_ADDR = 655852;
+        binary_string += ax25_frame.SRC_ADDR.to_string();
 
-            ax25_frame.CTRL_FIELD = 255;
-            binary_string += ax25_frame.CTRL_FIELD.to_string();
+        ax25_frame.DIGIPEATER_ADDR = 487392983;
+        binary_string += ax25_frame.DIGIPEATER_ADDR.to_string();
 
-            ax25_frame.PROTOCOL_ID = 254;
-            binary_string += ax25_frame.PROTOCOL_ID.to_string();
+        ax25_frame.CTRL_FIELD = 255;
+        binary_string += ax25_frame.CTRL_FIELD.to_string();
 
-            ax25_frame.INFO = parsed_data_line;
-            binary_string += ax25_frame.INFO;
+        ax25_frame.PROTOCOL_ID = 254;
+        binary_string += ax25_frame.PROTOCOL_ID.to_string();
 
-            ax25_frame.FCS = 1024;
-            binary_string += ax25_frame.FCS.to_string();
+        ax25_frame.INFO = parsed_data_line;
+        binary_string += ax25_frame.INFO;
 
-            ax25_frame.END_FLAG = 126;
-            binary_string += ax25_frame.END_FLAG.to_string();
+        ax25_frame.FCS = 1024;
+        binary_string += ax25_frame.FCS.to_string();
 
-            // std::cout << ax25_frame.START_FLAG << ax25_frame.DEST_ADDR << ax25_frame.SRC_ADDR << ax25_frame.DIGIPEATER_ADDR << ax25_frame.CTRL_FIELD << ax25_frame.PROTOCOL_ID << ax25_frame.INFO << ax25_frame.FCS << ax25_frame.END_FLAG << std::endl;
+        ax25_frame.END_FLAG = 126;
+        binary_string += ax25_frame.END_FLAG.to_string();
 
-            uart_puts(UART_ID, binary_string.c_str());
+        // std::cout << ax25_frame.START_FLAG << ax25_frame.DEST_ADDR << ax25_frame.SRC_ADDR << ax25_frame.DIGIPEATER_ADDR << ax25_frame.CTRL_FIELD << ax25_frame.PROTOCOL_ID << ax25_frame.INFO << ax25_frame.FCS << ax25_frame.END_FLAG << std::endl;
+
+        // uart_puts( t, binary_string.c_str()); will likely use a dedicated to_rf function instead
+        // printf(binary_string.c_str());
+        std::cout << "###################" << std::endl;
+        std::cout << "GPGGA DATA ONLY: ";
+        std::cout << parsed_data_line.c_str() << std::endl;
 
         }
-        else
-            std::cout << "UART NOT READABLE" << std::endl;
         
-    }
 
-    while (1)
+    while(1)
         tight_loop_contents();
     
 }
