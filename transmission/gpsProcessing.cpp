@@ -100,8 +100,8 @@ int main(int argc, char **argv){
         
         package_GPGGA(raw_data_line, ',', parsed_data_line);
 
-        std::cout << "Raw Data from GPS: ";
-        std::cout << raw_data_line << std::endl;
+        // std::cout << "Raw Data from GPS: ";
+        // std::cout << raw_data_line << std::endl;
         raw_data_line = "";
     
     
@@ -139,8 +139,8 @@ int main(int argc, char **argv){
 
         // uart_puts( t, binary_string.c_str()); will likely use a dedicated to_rf function instead
         // printf(binary_string.c_str());
-        std::cout << "###################" << std::endl;
-        std::cout << "GPGGA DATA ONLY: ";
+        // std::cout << "###################" << std::endl;
+        // std::cout << "GPGGA DATA ONLY: ";
         std::cout << parsed_data_line.c_str() << std::endl;
 
         }
@@ -148,5 +148,8 @@ int main(int argc, char **argv){
 
     while(1)
         tight_loop_contents();
+    
+}
+
     
 }
