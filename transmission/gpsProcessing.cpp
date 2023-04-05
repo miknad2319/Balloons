@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <string.h>
 #include <sstream>
 #include <bitset>
 #include <stdio.h>
@@ -36,7 +37,8 @@ void package_GPGGA(std::string s, char delimiter, std::string& output)
         //cout << word << endl;
         if (index == 0 && word != "$GPGGA")
             break;
-        else if (index == 1 || index == 2 || index == 4 || index == 6 || index == 9) {
+        else if (index == 1 || index == 2 || index == 4 || index == 7 || index == 9) {
+            //      UTC TIME      LAT           LONG        Num Sats       ELEVATION
             binary_string += word;
             binary_string += ",";
         }
@@ -45,10 +47,12 @@ void package_GPGGA(std::string s, char delimiter, std::string& output)
 
     if (binary_string != "") {
         // for (size_t i = 0; i < binary_string.size(); i++)
-        //     // output_file << binary_string[i]; //this is for plaintxt
-        //     output_string += std::bitset<8>(binary_string[i]).to_string();
-        // // output_file << endl;
+            // output_file << binary_string[i]; //this is for plaintxt
+            //output_string += std::bitset<8>(binary_string[i]).to_string();
+        // output_file << endl;
         // output = output_string;
+        // std::cout << "Raw GPGGA: " << s << std::endl;
+        std::cout << binary_string << std::endl;
         output = binary_string;
     }
 }
@@ -88,6 +92,7 @@ int main(int argc, char **argv){
         std::string raw_data_line = "";
         std::string parsed_data_line = "";
         std::string binary_string = "";
+        std::string header = "";
 
         // Read/Parse raw data, write to line var
         
@@ -99,9 +104,12 @@ int main(int argc, char **argv){
         }
         
         package_GPGGA(raw_data_line, ',', parsed_data_line);
-
-        // std::cout << "Raw Data from GPS: ";
+        
         // std::cout << raw_data_line << std::endl;
+        // std::cout << "Parsed Data Line: ";
+        // std::cout << parsed_data_line.c_str() << std::endl;
+    
+        
         raw_data_line = "";
     
     
@@ -141,15 +149,12 @@ int main(int argc, char **argv){
         // printf(binary_string.c_str());
         // std::cout << "###################" << std::endl;
         // std::cout << "GPGGA DATA ONLY: ";
-        std::cout << parsed_data_line.c_str() << std::endl;
+        // std::cout << parsed_data_line.c_str() << std::endl;
 
         }
         
 
     while(1)
         tight_loop_contents();
-    
-}
-
     
 }

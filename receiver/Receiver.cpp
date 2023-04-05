@@ -1,147 +1,118 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <bitset>
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
-
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <bitset>
 
 // UART SETUP
 #define UART_ID uart0
 #define BAUD_RATE 9600
 
-// Transmission/Send/Output 
+// # Transmission/Send/Output #
 #define UART_TX_PIN 4
 
-// Reciever/Input 
-#define UART_RX_PIN 5
+// # Reciever/receiver #
+#define UART_RX_PIN  5
 
 #define PARITY    UART_PARITY_NONE
 
-// USE THIS METHOD TO READ IN RAW GPS DATA
+// RECEIVING AX25 FRAME
+typedef struct ax25_frame_r {
+    int START_FLAG;
+    int DEST_ADDR;
+    int SRC_ADDR;
+    int DIGIPEATER_ADDR;
+    int CTRL_FIELD;
+    int PROTOCOL_ID;
+    std::string INFO;
+    int FCS;
+    int END_FLAG;
+} ax25_frame_receiver;
 
-void package_GPGGA(std::string s, char delimiter, std::string& output)
-{
-    std::stringstream stream(s);
-    std::string word;
-    std::string binary_string = "";
-    std::string output_string = "";
-    int index = 0;
+std::string unparse_bin(std::string binary_line) {
+    std::string line = binary_line;
+    std::stringstream sstream(line);
+    std::string unparsed_line;
 
-    while (!stream.eof()) {
-
-        getline(stream, word, delimiter);
-        //cout << word << endl;
-        if (index == 0 && word != "$GPGGA")
-            break;
-        else if (index == 1 || index == 2 || index == 4 || index == 6 || index == 9) {
-            binary_string += word;
-            binary_string += ",";
-        }
-        index++;
+    while(sstream.good()) {
+        std::bitset<8> current_character;
+        sstream >> current_character;
+        char c = char(current_character.to_ulong());
+        //std::cout << c;
+        unparsed_line += c;
     }
-
-    if (binary_string != "") {
-        for (size_t i = 0; i < binary_string.size(); i++)
-            // output_file << binary_string[i]; //this is for plaintxt
-            output_string += std::bitset<8>(binary_string[i]).to_string();
-        // output_file << endl;
-        output = output_string;
-    }
+    // std::cout << unparsed_line;
+    return unparsed_line.substr(0,unparsed_line.length()-1);
 }
 
-// TRANSMISSION AX25 STRUCT
-typedef struct ax25_frame_s {
-    std::bitset<8> START_FLAG;
-    std::bitset<56> DEST_ADDR;
-    std::bitset<56> SRC_ADDR;
-    std::bitset<448> DIGIPEATER_ADDR;
-    std::bitset<8> CTRL_FIELD;
-    std::bitset<8> PROTOCOL_ID;
-    std::string INFO;
-    std::bitset<16> FCS;
-    std::bitset<8> END_FLAG;
-} ax25_frame_send;
-
-int main(int argc, char **argv){
-
-    stdio_init_all();
+int main() {
+    
+    // Set up our UART with the required speed.
     uart_init(UART_ID, BAUD_RATE);
+
+    // Set the TX and RX pins by using the function select on the GPIO
+    // Set datasheet for more information on function select
     gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART);
 
-    // string file_name=argv[1];
+    ax25_frame_r receiver_ax25_frame;
 
-    // ifstream inFile;
-    // ofstream outFile;
-    // string outFileName = "binary_gps_data.txt";
-    // string outFileName = "parsed_gps_data.txt";
-    // inFile = ifstream(file_name, ios_base::in);
- 
-        //READ LINE BY LINE, send GPGGA data to outfile in binary;
-        // outFile.open(outFileName);
+    // LOOP TO READ FROM 
     while(true) {
 
         std::string raw_data_line = "";
-        std::string parsed_data_line = "";
-        std::string binary_string = "";
+        std::string START_FLAG;
+        std::string DEST_ADDR;
+        std::string SRC_ADDR;
+        std::string DIGIPEATER_ADDR;
+        std::string CTRL_FIELD;
+        std::string PROTOCOL_ID;
+        std::string INFO;
+        std::string FCS;
+        std::string END_FLAG;
 
-        // Read/Parse raw data, write to line var
+
         if(uart_is_readable(UART_ID)){
-
             while(uart_is_readable(UART_ID)){
                 //SAVE GPGGA
                 char c = uart_getc(UART_ID);
                 raw_data_line += c;
             }
 
-            package_GPGGA(raw_data_line, ',', parsed_data_line);
-        
-        
-            // packaging the parsed data
-            ax25_frame_send ax25_frame;
+            START_FLAG = raw_data_line.substr(0,8);
+            receiver_ax25_frame.START_FLAG = std::stoi(START_FLAG, 0, 2);
 
-            ax25_frame.START_FLAG = 126;
-            binary_string += ax25_frame.START_FLAG.to_string().c_str();
+            DEST_ADDR = raw_data_line.substr(8,56);
+            receiver_ax25_frame.DEST_ADDR = std::stoi(DEST_ADDR, 0, 2);
+            
+            SRC_ADDR = raw_data_line.substr(64,56);
+            receiver_ax25_frame.SRC_ADDR = std::stoi(SRC_ADDR, 0, 2);
 
-            ax25_frame.DEST_ADDR = 32167;
-            binary_string += ax25_frame.DEST_ADDR.to_string();
+            DIGIPEATER_ADDR = raw_data_line.substr(120, 448);
+            receiver_ax25_frame.DIGIPEATER_ADDR = std::stoi(DIGIPEATER_ADDR, 0, 2);
 
-            ax25_frame.SRC_ADDR = 655852;
-            binary_string += ax25_frame.SRC_ADDR.to_string();
+            CTRL_FIELD = raw_data_line.substr(568,8);
+            receiver_ax25_frame.CTRL_FIELD = std::stoi(CTRL_FIELD, 0, 2);
 
-            ax25_frame.DIGIPEATER_ADDR = 487392983;
-            binary_string += ax25_frame.DIGIPEATER_ADDR.to_string();
+            PROTOCOL_ID = raw_data_line.substr(576,8);
+            receiver_ax25_frame.PROTOCOL_ID = std::stoi(PROTOCOL_ID, 0, 2);
 
-            ax25_frame.CTRL_FIELD = 255;
-            binary_string += ax25_frame.CTRL_FIELD.to_string();
+            INFO = unparse_bin(raw_data_line);    
+            receiver_ax25_frame.INFO = INFO;
+            
+            FCS = raw_data_line.substr(raw_data_line.size()-24, 16);
+            receiver_ax25_frame.FCS = std::stoi(FCS, 0, 2);
 
-            ax25_frame.PROTOCOL_ID = 254;
-            binary_string += ax25_frame.PROTOCOL_ID.to_string();
-
-            ax25_frame.INFO = parsed_data_line;
-            binary_string += ax25_frame.INFO;
-
-            ax25_frame.FCS = 1024;
-            binary_string += ax25_frame.FCS.to_string();
-
-            ax25_frame.END_FLAG = 126;
-            binary_string += ax25_frame.END_FLAG.to_string();
-
-            // std::cout << ax25_frame.START_FLAG << ax25_frame.DEST_ADDR << ax25_frame.SRC_ADDR << ax25_frame.DIGIPEATER_ADDR << ax25_frame.CTRL_FIELD << ax25_frame.PROTOCOL_ID << ax25_frame.INFO << ax25_frame.FCS << ax25_frame.END_FLAG << std::endl;
-
-            // uart_puts( t, binary_string.c_str()); will likely use a dedicated to_rf function instead
-            printf(binary_string.c_str());
-
+            END_FLAG = raw_data_line.substr(raw_data_line.size()-8, 8);
+            receiver_ax25_frame.END_FLAG = std::stoi(END_FLAG, 0, 2);
         }
-        else
-            std::cout << "UART NOT READABLE" << std::endl;
-        
+
+        uart_puts(UART_ID, INFO.c_str());
+        printf(INFO.c_str());
     }
 
-    while(1)
+    while (1)
         tight_loop_contents();
-    
 }

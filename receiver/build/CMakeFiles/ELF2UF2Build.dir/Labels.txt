@@ -1,0 +1,13 @@
+# Target labels
+ ELF2UF2Build
+# Source files and their labels
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/CMakeFiles/ELF2UF2Build
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/CMakeFiles/ELF2UF2Build.rule
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/CMakeFiles/ELF2UF2Build-complete.rule
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/elf2uf2/src/ELF2UF2Build-stamp/ELF2UF2Build-build.rule
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/elf2uf2/src/ELF2UF2Build-stamp/ELF2UF2Build-configure.rule
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/elf2uf2/src/ELF2UF2Build-stamp/ELF2UF2Build-download.rule
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/elf2uf2/src/ELF2UF2Build-stamp/ELF2UF2Build-install.rule
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/elf2uf2/src/ELF2UF2Build-stamp/ELF2UF2Build-mkdir.rule
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/elf2uf2/src/ELF2UF2Build-stamp/ELF2UF2Build-patch.rule
+/Users/dank/Desktop/NJIT/BALLOONS/receiver/build/elf2uf2/src/ELF2UF2Build-stamp/ELF2UF2Build-update.rule

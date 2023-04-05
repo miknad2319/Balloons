@@ -11,8 +11,8 @@ add_executable(transmission
     gpsProcessing.cpp
 )
 
-pico_enable_stdio_usb(transmission 1)
-pico_enable_stdio_uart(transmission 1)
+pico_enable_stdio_usb(transmission 1) #enables printf through usb
+pico_enable_stdio_uart(transmission 0) #disables printf through uart
 
 pico_add_extra_outputs(transmission)
 
